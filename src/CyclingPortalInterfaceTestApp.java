@@ -23,7 +23,7 @@ public class CyclingPortalInterfaceTestApp {
 	public static void main(String[] args) {
 		System.out.println("The system compiled and started the execution...");
 
-		MiniCyclingPortalInterface portal = new BadMiniCyclingPortal();
+		BadCyclingPortal portal = new BadCyclingPortal();
 //		CyclingPortalInterface portal = new BadCyclingPortal();
 
 		assert (portal.getRaceIds().length == 0)
