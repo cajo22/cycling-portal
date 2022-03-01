@@ -1,0 +1,48 @@
+======= CLASSES =======
+Race
+- Name
+- Description
+- Stages (array of ids)
+
+Stage
+- Name
+- Description
+- Length
+- Start Time
+- Type
+
+Segment
+- Type
+
+Sprint (override segment)
+- Stage id
+- Location
+
+Climb (override segment)
+- Stage id
+- Location
+- Type
+- Average gradient
+- Length
+
+Team
+- Name
+- Description
+
+Rider
+- Team id
+- Name
+- Year of birth
+
+Rider results
+- Stage id
+- Rider id
+- Checkpoints (array of times)
+
+======= GLOBALS =======
+Races (dictionary id:race)
+Stages (dictionary id:stage)
+Segments (dictionary id:segment)
+Teams (dictionary id:team)
+Riders (dictionary id:rider)
+

@@ -1,5 +1,6 @@
 package cycling;
 
+import cycling.StageType;
 import java.time.LocalTime;
 
 public class Stage {
@@ -35,7 +36,7 @@ public class Stage {
     }
 
     public StageType getStageType() {
-        return StageType;
+        return type;
     }
 
 }

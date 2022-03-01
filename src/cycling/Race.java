@@ -3,12 +3,14 @@ package cycling;
 public class Race {
 	private String name;
 	private String description;
+	private Integer id;
 	private Integer[] stageIds;
 
-	public Race(String inpName, String inpDescription)
+	public Race(String name, String description, Integer id)
 	{
-		name = inpName;
-		description = inpDescription;
+		this.name = name;
+		this.description = description;
+		this.id = id;
 	}
 
 	public String getName()
@@ -24,5 +26,10 @@ public class Race {
 	public Integer[] getStageIds()
 	{
 		return stageIds;
+	}
+
+	public String toString()
+	{
+		return ("Race [name = "+name+", description = "+description+", stageIds = "+stageIds+"]");
 	}
 }
