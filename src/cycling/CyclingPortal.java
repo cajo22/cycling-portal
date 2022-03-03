@@ -19,7 +19,8 @@ import cycling.InvalidCheckpointsException;
 import cycling.NameNotRecognisedException;
 import cycling.InvalidLengthException;
 import java.util.ArrayList;
-
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * BadCyclingPortal is a minimally compiling, but non-functioning implementor
@@ -30,21 +31,31 @@ import java.util.ArrayList;
  *
  */
 public class CyclingPortal implements CyclingPortalInterface {
-	ArrayList<Integer> raceIds = new ArrayList<Integer>();
 	ArrayList<Race> races = new ArrayList<Race>();
+	ArrayList<Stage> stages = new ArrayList<Stage>();
 
 	@Override
 	public int[] getRaceIds() {
-		int[] retRaceIds = new int[raceIds.size()];
-		for (Integer i = 0; i < raceIds.size(); i++) {
-			retRaceIds[i] = raceIds.get(i);
+		int[] retRaceIds = new int[races.size()];
+		for (int i = 0; i < races.size(); i++) {
+			retRaceIds[i] = (races.get(i)).getId();
 		}
 		return retRaceIds;
 	}
 
+	public Integer generateId(int[] id) {
+		Random rand = new Random();
+		Integer newId;
+		do {
+			newId = rand.nextInt(10000);
+		}
+		while (Arrays.asList(id).contains(newId));
+		return (newId);
+	}
+
 	@Override
 	public int createRace(String name, String description) throws IllegalNameException, InvalidNameException {
-		Integer raceId = 0;
+		Integer raceId = generateId(getRaceIds());
 
 		if (name == null || name == "")
 			throw new InvalidNameException("Name invalid.");
@@ -60,46 +71,108 @@ public class CyclingPortal implements CyclingPortalInterface {
 
 	@Override
 	public String viewRaceDetails(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		for (int i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getId() == raceId) {
+				return (races.get(i)).toString();
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override
 	public void removeRaceById(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getId() == raceId) {
+				races.remove(i);
+				return;
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override
 	public int getNumberOfStages(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return 0;
+		for (int i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getId() == raceId) {
+				return ((races.get(i)).getStageIds()).size();
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
+	}
+
+	public int[] getStageIds() {
+		int[] retStageIds = new int[stages.size()];
+		for (int i = 0; i < stages.size(); i++) {
+			retStageIds[i] = (stages.get(i)).getId();
+		}
+		return retStageIds;
 	}
 
 	@Override
 	public int addStageToRace(int raceId, String stageName, String description, double length, LocalDateTime startTime,
 			StageType type)
 			throws IDNotRecognisedException, IllegalNameException, InvalidNameException, InvalidLengthException {
-		// TODO Auto-generated method stub
-		return 0;
+		Integer stageId;
+		Stage newStage;
+
+		if (length < 5.0)
+			throw new InvalidLengthException("Length invalid.");
+		if (stageName == null || stageName == "")
+			throw new InvalidNameException("Name invalid.");
+		for (Integer i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getName() == stageName) {
+				throw new IllegalNameException("Name already in use.");
+			}
+		}
+		for (Integer i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getId() == raceId) {
+				stageId = generateId(getStageIds());
+				newStage = new Stage(stageName, description, length, startTime, type, stageId);
+				stages.add(newStage);
+				(races.get(i)).addStageId(stageId);
+				return stageId;
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override
 	public int[] getRaceStages(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		for (int i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getId() == raceId) {
+				return (races.get(i)).getStageIdsIntArray();
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override
 	public double getStageLength(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return 0;
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				return ((stages.get(i)).getLength());
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override
 	public void removeStageById(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
+		int stageIndex;
 
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				stages.remove(i);
+				for (int j = 0; j < races.size(); j++) {
+					stageIndex = ((races.get(i)).getStageIds()).indexOf(stageId);
+					if (stageIndex >= 0) {
+						(races.get(i)).removeStageId(stageIndex);
+						return;
+					}
+				}
+			}
+		}
+		throw new IDNotRecognisedException("Id not found");
 	}
 
 	@Override

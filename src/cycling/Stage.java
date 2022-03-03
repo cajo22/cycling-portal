@@ -1,22 +1,24 @@
 package cycling;
 
 import cycling.StageType;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 public class Stage {
     private String name;
     private String description;
-    private Integer duration;
-    private LocalTime startTime;
+    private Double length;
+    private LocalDateTime startTime;
     private StageType type;
+    private int id;
 
-	public Stage(String inpName, String inpDescription, Integer inpDuration, LocalTime inpStartTime, StageType inpType)
+	public Stage(String name, String description, Double length, LocalDateTime startTime, StageType type, int id)
 	{
-		name = inpName;
-		description = inpDescription;
-        duration = inpDuration;
-        startTime = inpStartTime;
-        type = inpType;
+		this.name = name;
+		this.description = description;
+        this.length = length;
+        this.startTime = startTime;
+        this.type = type;
+        this.id = id;
 	}
 
     public String getName() {
@@ -27,16 +29,20 @@ public class Stage {
         return description;
     }
 
-    public Integer getDuration() {
-        return duration;
+    public Double getLength() {
+        return length;
     }
 
-    public LocalTime getStartTime() {
+    public LocalDateTime getStartTime() {
         return startTime;
     }
 
     public StageType getStageType() {
         return type;
+    }
+
+    public int getId() {
+        return id;
     }
 
 }
