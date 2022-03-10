@@ -7,6 +7,8 @@ import java.time.LocalTime;
 import cycling.Race;
 import cycling.Stage;
 import cycling.StageType;
+import cycling.StageState;
+import cycling.Segment;
 import cycling.SegmentType;
 import cycling.IllegalNameException;
 import cycling.InvalidNameException;
@@ -33,6 +35,7 @@ import java.util.Random;
 public class CyclingPortal implements CyclingPortalInterface {
 	ArrayList<Race> races = new ArrayList<Race>();
 	ArrayList<Stage> stages = new ArrayList<Stage>();
+	ArrayList<Segment> segments = new ArrayList<Segment>();
 
 	@Override
 	public int[] getRaceIds() {
@@ -76,7 +79,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 				return (races.get(i)).toString();
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
@@ -87,7 +90,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 				return;
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
@@ -97,7 +100,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 				return ((races.get(i)).getStageIds()).size();
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	public int[] getStageIds() {
@@ -133,7 +136,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 				return stageId;
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
@@ -143,7 +146,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 				return (races.get(i)).getStageIdsIntArray();
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
@@ -172,40 +175,107 @@ public class CyclingPortal implements CyclingPortalInterface {
 				}
 			}
 		}
-		throw new IDNotRecognisedException("Id not found");
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
+	}
+
+	public int[] getSegmentIds() {
+		int[] retSegmentIds = new int[segments.size()];
+		for (int i = 0; i < segments.size(); i++) {
+			retSegmentIds[i] = (segments.get(i)).getId();
+		}
+		return retSegmentIds;
 	}
 
 	@Override
 	public int addCategorizedClimbToStage(int stageId, Double location, SegmentType type, Double averageGradient,
 			Double length) throws IDNotRecognisedException, InvalidLocationException, InvalidStageStateException,
 			InvalidStageTypeException {
-		// TODO Auto-generated method stub
-		return 0;
+		Integer segmentId;
+		Segment newSegment;
+
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				if (location > (stages.get(i)).getLength() || location < 0.0)
+					throw new InvalidLocationException("Location (finish point) of "+location+" is invalid");
+				else if (stages.get(i).getStageType() == StageType.TT)
+					throw new InvalidStageTypeException("Cannot add categorized climbs to a time trial stage.");
+				else if (stages.get(i).getState() == StageState.WAITING)
+					throw new InvalidStageStateException("Cannot add to a stage that is waiting for results.");
+				segmentId = generateId(getSegmentIds());
+				newSegment = new Segment(type, location, averageGradient, length, segmentId);
+				segments.add(newSegment);
+				(stages.get(i)).addSegmentId(segmentId);
+				return segmentId;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public int addIntermediateSprintToStage(int stageId, double location) throws IDNotRecognisedException,
 			InvalidLocationException, InvalidStageStateException, InvalidStageTypeException {
-		// TODO Auto-generated method stub
-		return 0;
+		Integer segmentId;
+		Segment newSegment;
+
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				if (location > (stages.get(i)).getLength() || location < 0.0)
+					throw new InvalidLocationException("Location (finish point) of "+location+" is invalid");
+				else if (stages.get(i).getStageType() == StageType.TT)
+					throw new InvalidStageTypeException("Cannot add sprints to a time trial stage.");
+				else if (stages.get(i).getState() == StageState.WAITING)
+					throw new InvalidStageStateException("Cannot add to a stage that is waiting for results.");
+				segmentId = generateId(getSegmentIds());
+				newSegment = new Segment(SegmentType.SPRINT, location, 0.0, 0.0, segmentId);
+				segments.add(newSegment);
+				(stages.get(i)).addSegmentId(segmentId);
+				return segmentId;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public void removeSegment(int segmentId) throws IDNotRecognisedException, InvalidStageStateException {
-		// TODO Auto-generated method stub
+		int segmentIndex;
 
+		for (int i = 0; i < segments.size(); i++) {
+			if ((segments.get(i)).getId() == segmentId) {
+				segments.remove(i);
+				for (int j = 0; j < stages.size(); j++) {
+					segmentIndex = ((stages.get(i)).getSegmentIds()).indexOf(segmentId);
+					if (segmentIndex >= 0) {
+						(stages.get(i)).removeSegmentId(segmentIndex);
+						return;
+					}
+				}
+			}
+		}
+		throw new IDNotRecognisedException("Segment ID of "+segmentId+" not found");
 	}
 
 	@Override
 	public void concludeStagePreparation(int stageId) throws IDNotRecognisedException, InvalidStageStateException {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				if (stages.get(i).getState() == StageState.WAITING)
+					throw new InvalidStageStateException("Cannot conclude "+stages.get(i).getName()+" (id:"+
+							stageId+") because it is already waiting for results");
+				stages.get(i).setState(StageState.WAITING);
+				return;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public int[] getStageSegments(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				return (stages.get(i)).getSegmentsIdsIntArray();
+			}
+		}
+		throw new IDNotRecognisedException("stage ID of "+stageId+" not found");
 	}
 
 	@Override

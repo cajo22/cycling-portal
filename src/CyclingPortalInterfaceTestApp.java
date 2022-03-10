@@ -1,6 +1,8 @@
+import cycling.SegmentType;
 import cycling.StageType;
 import src.cycling.CyclingPortal;
 import java.time.LocalDateTime;
+import cycling.Stage;
 
 /**
  * A short program to illustrate an app testing some minimal functionality of a
@@ -22,7 +24,7 @@ public class CyclingPortalInterfaceTestApp {
 	public static void main(String[] args) {
 		int raceId;
 		int stageId;
-		int j;
+		int segmentId;
 		System.out.println("The system compiled and started the execution...");
 
 		CyclingPortal portal = new CyclingPortal();
@@ -34,7 +36,11 @@ public class CyclingPortalInterfaceTestApp {
 			raceId = portal.createRace("Test race", "Test description");
 			stageId = portal.addStageToRace(raceId, "Test stage", "Test description",
 					5.0, LocalDateTime.now(), StageType.FLAT);
-			portal.removeStageById(stageId);
+			//segmentId = portal.addCategorizedClimbToStage(stageId, 5.0, SegmentType.C1, 4.0, 2.0);
+			//portal.removeStageById(stageId);
+			portal.concludeStagePreparation(stageId);
+			portal.getStageSegments(stageId);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
