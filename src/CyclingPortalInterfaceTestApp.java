@@ -25,6 +25,8 @@ public class CyclingPortalInterfaceTestApp {
 		int raceId;
 		int stageId;
 		int segmentId;
+		int teamId;
+		int riderId;
 		System.out.println("The system compiled and started the execution...");
 
 		CyclingPortal portal = new CyclingPortal();
@@ -40,6 +42,9 @@ public class CyclingPortalInterfaceTestApp {
 			//portal.removeStageById(stageId);
 			portal.concludeStagePreparation(stageId);
 			portal.getStageSegments(stageId);
+			teamId = portal.createTeam("Test team", "Test description");
+			riderId = portal.createRider(teamId, "Test rider", 1900);
+			System.out.println(portal.stages.get(0).toString());
 
 		} catch (Exception e) {
 			e.printStackTrace();

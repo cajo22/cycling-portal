@@ -10,6 +10,8 @@ import cycling.StageType;
 import cycling.StageState;
 import cycling.Segment;
 import cycling.SegmentType;
+import cycling.Team;
+import cycling.Rider;
 import cycling.IllegalNameException;
 import cycling.InvalidNameException;
 import cycling.IDNotRecognisedException;
@@ -33,9 +35,11 @@ import java.util.Random;
  *
  */
 public class CyclingPortal implements CyclingPortalInterface {
-	ArrayList<Race> races = new ArrayList<Race>();
-	ArrayList<Stage> stages = new ArrayList<Stage>();
-	ArrayList<Segment> segments = new ArrayList<Segment>();
+	public ArrayList<Race> races = new ArrayList<Race>();
+	public ArrayList<Stage> stages = new ArrayList<Stage>();
+	public ArrayList<Segment> segments = new ArrayList<Segment>();
+	public ArrayList<Team> teams = new ArrayList<Team>();
+	public ArrayList<Rider> riders = new ArrayList<Rider>();
 
 	@Override
 	public int[] getRaceIds() {
@@ -280,46 +284,102 @@ public class CyclingPortal implements CyclingPortalInterface {
 
 	@Override
 	public int createTeam(String name, String description) throws IllegalNameException, InvalidNameException {
-		// TODO Auto-generated method stub
-		return 0;
+		Integer teamId = generateId(getTeams());
+
+		if (name == null || name == "")
+			throw new InvalidNameException("Name invalid.");
+		for (Integer i = 0; i < teams.size(); i++) {
+			if ((teams.get(i)).getName() == name) {
+				throw new IllegalNameException("Name already in use.");
+			}
+		}
+		Team newTeam = new Team(name, description, teamId);
+		teams.add(newTeam);
+		return teamId;
 	}
 
 	@Override
 	public void removeTeam(int teamId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
+		for (int i = 0; i < teams.size(); i++) {
+			if ((teams.get(i)).getId() == teamId) {
+				teams.remove(i);
+				return;
+			}
+		}
+		throw new IDNotRecognisedException("Team ID of "+teamId+" not found");
 
 	}
 
 	@Override
 	public int[] getTeams() {
-		// TODO Auto-generated method stub
-		return null;
+		int[] retTeamIds = new int[teams.size()];
+		for (int i = 0; i < teams.size(); i++) {
+			retTeamIds[i] = (teams.get(i)).getId();
+		}
+		return retTeamIds;
 	}
 
 	@Override
 	public int[] getTeamRiders(int teamId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		for (int i = 0; i < teams.size(); i++) {
+			if ((teams.get(i)).getId() == teamId) {
+				return (teams.get(i)).getRiderIdsIntArray();
+			}
+		}
+		throw new IDNotRecognisedException("Team ID of "+teamId+" not found");
+	}
+
+	public int[] getRiderIds() {
+		int[] retRiderIds = new int[riders.size()];
+		for (int i = 0; i < riders.size(); i++) {
+			retRiderIds[i] = (riders.get(i)).getId();
+		}
+		return retRiderIds;
 	}
 
 	@Override
 	public int createRider(int teamID, String name, int yearOfBirth)
 			throws IDNotRecognisedException, IllegalArgumentException {
-		// TODO Auto-generated method stub
-		return 0;
+		Integer riderId = generateId(getRiderIds());
+
+		if (name == null)
+			throw new IllegalArgumentException("Name invalid (is null).");
+		else if (yearOfBirth < 1900)
+			throw new IllegalArgumentException("Year of birth cannot be less than 1900.");
+		for (int i = 0; i < teams.size(); i++) {
+			if ((teams.get(i)).getId() == teamID) {
+				Rider newRider = new Rider(teamID, riderId, name, yearOfBirth);
+				riders.add(newRider);
+				(teams.get(i)).addRiderId(riderId);
+				return riderId;
+			}
+		}
+		throw new IDNotRecognisedException("Team ID of "+teamID+" not found");
 	}
 
 	@Override
 	public void removeRider(int riderId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
+		int riderIndex;
 
+		for (int i = 0; i < riders.size(); i++) {
+			if ((riders.get(i)).getId() == riderId) {
+				riders.remove(i);
+				for (int j = 0; j < teams.size(); j++) {
+					riderIndex = ((teams.get(i)).getRiderIds()).indexOf(riderId);
+					if (riderId >= 0) {
+						(teams.get(i)).removeRiderId(riderIndex);
+						return;
+					}
+				}
+			}
+		}
+		throw new IDNotRecognisedException("Rider ID of "+riderId+" not found");
 	}
 
 	@Override
 	public void registerRiderResultsInStage(int stageId, int riderId, LocalTime... checkpoints)
 			throws IDNotRecognisedException, DuplicatedResultException, InvalidCheckpointsException,
 			InvalidStageStateException {
-		// TODO Auto-generated method stub
 
 	}
 

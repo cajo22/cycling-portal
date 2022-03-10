@@ -4,7 +4,10 @@ import cycling.StageType;
 import cycling.StageState;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
 
 public class Stage {
     private String name;
@@ -15,6 +18,7 @@ public class Stage {
     private int id;
     private ArrayList<Integer> segmentIds;
     private StageState state;
+    private Dictionary<Integer, LocalTime[]> riderResults;
 
 	public Stage(String name, String description, Double length, LocalDateTime startTime, StageType type, int id)
 	{
@@ -26,6 +30,7 @@ public class Stage {
         this.id = id;
         this.segmentIds = new ArrayList<Integer>();
         this.state = StageState.IDLE;
+        this.riderResults = new Hashtable<Integer, LocalTime[]>();
 	}
 
     public String getName() {
@@ -71,7 +76,8 @@ public class Stage {
     public String toString()
     {
         return ("Stage [name = "+name+", description = "+description+", length = "+length+", id = "+id+
-                ", startTime = "+startTime+", type = "+type+", id = "+id+", segmentIds = "+segmentIds+"]");
+                ", startTime = "+startTime+", type = "+type+", id = "+id+", segmentIds = "+segmentIds+
+                ", riderResults = "+riderResults+"]");
     }
 
     public void addSegmentId(int segmentId) { segmentIds.add(segmentId); }
@@ -79,5 +85,9 @@ public class Stage {
     public void removeSegmentId(int segmentIndex) { segmentIds.add(segmentIndex); }
 
     public void setState(StageState state) { this.state = state; }
+
+    public void addToRiderResults(int riderId, LocalTime[] checkpoints) {
+        riderResults.put(riderId, checkpoints);
+    }
 
 }
