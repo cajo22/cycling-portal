@@ -73,6 +73,15 @@ public class Stage {
         return retSegmentIds;
     }
 
+    public Dictionary<Integer, LocalTime[]> getRiderResults() { return riderResults; }
+
+    public LocalTime[] getResultsForRider(int riderId) { return riderResults.get(riderId); }
+
+    public void removeResultsForRider(int riderId) {
+        if (riderResults.get(riderId) != null)
+                riderResults.remove(riderId);
+    }
+
     public String toString()
     {
         return ("Stage [name = "+name+", description = "+description+", length = "+length+", id = "+id+

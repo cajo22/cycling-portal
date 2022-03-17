@@ -4,6 +4,7 @@ import cycling.CyclingPortalInterface;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Duration;
 import cycling.Race;
 import cycling.Stage;
 import cycling.StageType;
@@ -24,6 +25,7 @@ import cycling.NameNotRecognisedException;
 import cycling.InvalidLengthException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -50,7 +52,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 		return retRaceIds;
 	}
 
-	public Integer generateId(int[] id) {
+	private Integer generateId(int[] id) {
 		Random rand = new Random();
 		Integer newId;
 		do {
@@ -337,6 +339,14 @@ public class CyclingPortal implements CyclingPortalInterface {
 		return retRiderIds;
 	}
 
+	public boolean isRiderIdPresent(int riderId) {
+		for (int i = 0; i < riders.size(); i++) {
+			if ((riders.get(i)).getId() == riderId)
+				return true;
+		}
+		return false;
+	}
+
 	@Override
 	public int createRider(int teamID, String name, int yearOfBirth)
 			throws IDNotRecognisedException, IllegalArgumentException {
@@ -380,25 +390,78 @@ public class CyclingPortal implements CyclingPortalInterface {
 	public void registerRiderResultsInStage(int stageId, int riderId, LocalTime... checkpoints)
 			throws IDNotRecognisedException, DuplicatedResultException, InvalidCheckpointsException,
 			InvalidStageStateException {
+		if (isRiderIdPresent(riderId) == false)
+			throw new IDNotRecognisedException("Rider ID of "+riderId+" not found");
+		for (int i = 0; i < stages.size(); i++) {
+			if (stages.get(i).getId() == stageId) {
+				if (stages.get(i).getState() != StageState.WAITING)
+					throw new InvalidStageStateException("This stage is not waiting for results");
+				if (checkpoints.length != stages.get(i).getSegmentIds().size() + 1)
+					throw new InvalidCheckpointsException("Size of checkpoints must be # of segments + 1");
+				if (stages.get(i).getRiderResults().get(riderId) != null)
+					throw new DuplicatedResultException("Rider ID of "+riderId+" has results already recorded");
+				stages.get(i).addToRiderResults(riderId, checkpoints);
+				return;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
+	}
 
+	private Duration getDurationFromLocalTime(LocalTime localTime) {
+		Duration retDuration = Duration.ofSeconds(localTime.toSecondOfDay());
+		return retDuration;
 	}
 
 	@Override
 	public LocalTime[] getRiderResultsInStage(int stageId, int riderId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		LocalTime[] tempTimes;
+		if (isRiderIdPresent(riderId) == false)
+			throw new IDNotRecognisedException("Rider ID of "+riderId+" not found");
+		for (int i = 0; i < stages.size(); i++) {
+			if (stages.get(i).getId() == stageId) {
+				tempTimes = stages.get(i).getResultsForRider(riderId);
+				if (tempTimes == null)
+						return new LocalTime[0];
+				LocalTime[] retTimes = new LocalTime[tempTimes.length + 1];
+				for (int j = 0; j < tempTimes.length; j++)
+					retTimes[j] = tempTimes[j];
+				retTimes[retTimes.length - 1] = retTimes[retTimes.length - 2].minus(getDurationFromLocalTime(retTimes[0]));
+				return (retTimes);
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public LocalTime getRiderAdjustedElapsedTimeInStage(int stageId, int riderId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		LocalTime[] tempTimes;
+		LocalTime retTime;
+		if (isRiderIdPresent(riderId) == false)
+			throw new IDNotRecognisedException("Rider ID of "+riderId+" not found");
+		for (int i = 0; i < stages.size(); i++) {
+			if (stages.get(i).getId() == stageId) {
+				tempTimes = stages.get(i).getResultsForRider(riderId);
+				if (tempTimes == null) {
+					retTime = null;
+				} else {
+					retTime = tempTimes[tempTimes.length - 1];
+					//TODO: the actual math for this
+				}
+				return retTime;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public void deleteRiderResultsInStage(int stageId, int riderId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-
+		if (isRiderIdPresent(riderId) == false)
+			throw new IDNotRecognisedException("Rider ID of "+riderId+" not found");
+		for (int i = 0; i < stages.size(); i++) {
+			if (stages.get(i).getId() == stageId)
+				stages.get(i).removeResultsForRider(riderId);
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override

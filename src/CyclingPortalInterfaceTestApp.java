@@ -2,6 +2,9 @@ import cycling.SegmentType;
 import cycling.StageType;
 import src.cycling.CyclingPortal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Arrays;
+
 import cycling.Stage;
 
 /**
@@ -38,13 +41,20 @@ public class CyclingPortalInterfaceTestApp {
 			raceId = portal.createRace("Test race", "Test description");
 			stageId = portal.addStageToRace(raceId, "Test stage", "Test description",
 					5.0, LocalDateTime.now(), StageType.FLAT);
-			//segmentId = portal.addCategorizedClimbToStage(stageId, 5.0, SegmentType.C1, 4.0, 2.0);
+			segmentId = portal.addCategorizedClimbToStage(stageId, 2.0, SegmentType.C1, 4.0, 2.0);
+			segmentId = portal.addIntermediateSprintToStage(stageId, 5.0);
 			//portal.removeStageById(stageId);
 			portal.concludeStagePreparation(stageId);
 			portal.getStageSegments(stageId);
 			teamId = portal.createTeam("Test team", "Test description");
 			riderId = portal.createRider(teamId, "Test rider", 1900);
-			System.out.println(portal.stages.get(0).toString());
+			portal.registerRiderResultsInStage(stageId, riderId, new LocalTime[]{
+					LocalTime.of(12, 00, 00, 00),
+					LocalTime.of(13, 30, 00, 00),
+					LocalTime.of(13, 40, 00, 00)});
+			System.out.println(portal.stages.get(0).getResultsForRider(riderId));
+
+			//System.out.println((LocalTime.of(12, 00, 00, 00)).toNanoOfDay());
 
 		} catch (Exception e) {
 			e.printStackTrace();
