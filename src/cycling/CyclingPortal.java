@@ -51,7 +51,12 @@ public class CyclingPortal implements CyclingPortalInterface {
 		}
 		return retRaceIds;
 	}
-
+	/**
+	 * Randomly generate a unique integer ID.
+	 *
+	 * @param id An array containing existing IDs that should not be generated again.
+	 * @return An integer representing an ID that is not used in id.
+	 */
 	private Integer generateId(int[] id) {
 		Random rand = new Random();
 		Integer newId;
@@ -109,6 +114,11 @@ public class CyclingPortal implements CyclingPortalInterface {
 		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
+	/**
+	 * Get all the IDs of stages that exist in the system.
+	 *
+	 * @return An array of ints that represent all stage IDs in the system.
+	 */
 	public int[] getStageIds() {
 		int[] retStageIds = new int[stages.size()];
 		for (int i = 0; i < stages.size(); i++) {
@@ -184,6 +194,11 @@ public class CyclingPortal implements CyclingPortalInterface {
 		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
+	/**
+	 * Get all the IDs of segments that exist in the system.
+	 *
+	 * @return An array of ints that represent all segment IDs in the system.
+	 */
 	public int[] getSegmentIds() {
 		int[] retSegmentIds = new int[segments.size()];
 		for (int i = 0; i < segments.size(); i++) {
@@ -331,6 +346,11 @@ public class CyclingPortal implements CyclingPortalInterface {
 		throw new IDNotRecognisedException("Team ID of "+teamId+" not found");
 	}
 
+	/**
+	 * Get the points distribution for a specific segment type.
+	 *
+	 * @return An array of ints that represent all rider IDs in the system.
+	 */
 	public int[] getRiderIds() {
 		int[] retRiderIds = new int[riders.size()];
 		for (int i = 0; i < riders.size(); i++) {
@@ -339,6 +359,12 @@ public class CyclingPortal implements CyclingPortalInterface {
 		return retRiderIds;
 	}
 
+	/**
+	 * Check if a rider of certain ID exists in the system.
+	 *
+	 * @param riderId The rider ID to check for.
+	 * @return true if the rider exists, false otherwise
+	 */
 	public boolean isRiderIdPresent(int riderId) {
 		for (int i = 0; i < riders.size(); i++) {
 			if ((riders.get(i)).getId() == riderId)
@@ -380,6 +406,9 @@ public class CyclingPortal implements CyclingPortalInterface {
 						(teams.get(i)).removeRiderId(riderIndex);
 						return;
 					}
+				}
+				for (int j = 0; j < stages.size(); j++) {
+					(stages.get(i)).removeFromRiderResults(riderId);
 				}
 			}
 		}
@@ -545,7 +574,14 @@ public class CyclingPortal implements CyclingPortalInterface {
 		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
-	private SegmentType[] extractSegmentTypeArray(int[] segmentIds) throws IDNotRecognisedException {
+	/**
+	 * Given an array of segment IDs, extract their type.
+	 *
+	 * @param segmentIds An array of ints representing ids of segments in a stage.
+	 * @return An array of SegmentTypes matching segmentIds.
+	 *         An empty array if type is invalid.
+	 */
+	private SegmentType[] extractSegmentTypeArray(int[] segmentIds) {
 		SegmentType[] retArray = new SegmentType[segmentIds.length];
 		for (int id : segmentIds) {
 			for (int i = 0; i < segments.size(); i++) {
@@ -556,7 +592,13 @@ public class CyclingPortal implements CyclingPortalInterface {
 		}
 		return retArray;
 	}
-
+	/**
+	 * Get the points distribution for a specific segment type.
+	 *
+	 * @param type The SegmentType to get the distribution of
+	 * @return An array of ints that describe the point distribution of the race.
+	 *         An empty array if type is invalid.
+	 */
 	private int[] getPointDistributionForSegment(SegmentType type) {
 		switch (type) {
 			case C4:

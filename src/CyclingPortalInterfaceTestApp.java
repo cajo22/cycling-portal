@@ -39,13 +39,16 @@ public class CyclingPortalInterfaceTestApp {
 
 		try {
 			raceId = portal.createRace("Test race", "Test description");
-			stageId = portal.addStageToRace(raceId, "Test stage", "Test description",
+			stageId = portal.addStageToRace(raceId, "eeeeeee", "Test description",
 					5.0, LocalDateTime.now(), StageType.FLAT);
 			segmentId = portal.addCategorizedClimbToStage(stageId, 2.0, SegmentType.C1, 4.0, 2.0);
 			segmentId = portal.addIntermediateSprintToStage(stageId, 5.0);
 			//portal.removeStageById(stageId);
 			portal.concludeStagePreparation(stageId);
 			portal.getStageSegments(stageId);
+			portal.loadCyclingPortal("portal.txt");
+			System.out.println(portal.stages.get(0).toString());
+			stageId = portal.stages.get(0).getId();
 			teamId = portal.createTeam("Test team", "Test description");
 			riderId = portal.createRider(teamId, "Test rider", 1900);
 			portal.registerRiderResultsInStage(stageId, riderId, new LocalTime[]{
