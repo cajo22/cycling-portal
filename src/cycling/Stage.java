@@ -3,13 +3,14 @@ package cycling;
 import cycling.StageType;
 import cycling.StageState;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-public class Stage {
+public class Stage implements Serializable {
     private String name;
     private String description;
     private Double length;

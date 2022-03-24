@@ -1,8 +1,9 @@
 package cycling;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Rider {
+public class Rider implements Serializable {
     private int teamId;
     private int id;
     private String name;

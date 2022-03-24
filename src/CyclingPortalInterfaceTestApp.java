@@ -52,9 +52,7 @@ public class CyclingPortalInterfaceTestApp {
 					LocalTime.of(12, 00, 00, 00),
 					LocalTime.of(13, 30, 00, 00),
 					LocalTime.of(13, 40, 00, 00)});
-			System.out.println(portal.stages.get(0).getResultsForRider(riderId));
-
-			//System.out.println((LocalTime.of(12, 00, 00, 00)).toNanoOfDay());
+			portal.saveCyclingPortal("portal.txt");
 
 		} catch (Exception e) {
 			e.printStackTrace();

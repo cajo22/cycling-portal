@@ -2,7 +2,9 @@ package cycling;
 
 import cycling.SegmentType;
 
-public class Segment {
+import java.io.Serializable;
+
+public class Segment implements Serializable {
     private SegmentType type;
     private Double location;
     private Double averageGradient; // Always 0 for sprints.

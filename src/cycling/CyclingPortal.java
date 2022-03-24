@@ -1,7 +1,8 @@
 package src.cycling;
 
 import cycling.CyclingPortalInterface;
-import java.io.IOException;
+
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Duration;
@@ -23,15 +24,14 @@ import cycling.DuplicatedResultException;
 import cycling.InvalidCheckpointsException;
 import cycling.NameNotRecognisedException;
 import cycling.InvalidLengthException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Random;
+
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 /**
  * BadCyclingPortal is a minimally compiling, but non-functioning implementor
  * of the CyclingPortalInterface interface.
- * 
+ *
  * @author Diogo Pacheco
  * @version 1.0
  *
@@ -119,7 +119,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 
 	@Override
 	public int addStageToRace(int raceId, String stageName, String description, double length, LocalDateTime startTime,
-			StageType type)
+							  StageType type)
 			throws IDNotRecognisedException, IllegalNameException, InvalidNameException, InvalidLengthException {
 		Integer stageId;
 		Stage newStage;
@@ -194,7 +194,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 
 	@Override
 	public int addCategorizedClimbToStage(int stageId, Double location, SegmentType type, Double averageGradient,
-			Double length) throws IDNotRecognisedException, InvalidLocationException, InvalidStageStateException,
+										  Double length) throws IDNotRecognisedException, InvalidLocationException, InvalidStageStateException,
 			InvalidStageTypeException {
 		Integer segmentId;
 		Segment newSegment;
@@ -421,7 +421,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 			if (stages.get(i).getId() == stageId) {
 				tempTimes = stages.get(i).getResultsForRider(riderId);
 				if (tempTimes == null)
-						return new LocalTime[0];
+					return new LocalTime[0];
 				LocalTime[] retTimes = new LocalTime[tempTimes.length + 1];
 				for (int j = 0; j < tempTimes.length; j++)
 					retTimes[j] = tempTimes[j];
@@ -445,7 +445,7 @@ public class CyclingPortal implements CyclingPortalInterface {
 					retTime = null;
 				} else {
 					retTime = tempTimes[tempTimes.length - 1];
-					//TODO: the actual math for this
+					retTime = retTime.truncatedTo(ChronoUnit.SECONDS);
 				}
 				return retTime;
 			}
@@ -466,86 +466,374 @@ public class CyclingPortal implements CyclingPortalInterface {
 
 	@Override
 	public int[] getRidersRankInStage(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		LocalTime[] temp;
+		Map<Integer, Long> riderTimes = new HashMap<Integer, Long>();
+		int[] ridersRankInStage = new int[riders.size()];
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				// get times to the nanosecond as a long
+				for (int j = 0; j < riders.size(); j++) {
+					riderTimes.put(riders.get(j).getId(), (getRiderAdjustedElapsedTimeInStage(stageId, j)).toNanoOfDay());
+				}
+				// now sort the times and ids
+				List<Map.Entry<Integer, Long>> list = new ArrayList<>(riderTimes.entrySet());
+				list.sort(Map.Entry.comparingByValue());
+				for (int j = 0; j < list.size(); j++) {
+					ridersRankInStage[j] = list.get(j).getKey();
+				}
+				return ridersRankInStage;
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public LocalTime[] getRankedAdjustedElapsedTimesInStage(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<LocalTime> rankedAdjustedElapsedTimesInStage = new ArrayList<>();
+		int[] ridersRankInStage = new int[riders.size()];
+		LocalTime adjustedElapsedTime;
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId)
+				ridersRankInStage = getRidersRankInStage(stageId);
+			for (int j = 0; i < ridersRankInStage.length; j++) {
+				int riderId = ridersRankInStage[j];
+				adjustedElapsedTime = getRiderAdjustedElapsedTimeInStage(stageId, riderId);
+				rankedAdjustedElapsedTimesInStage.add(adjustedElapsedTime);
+			}
+			LocalTime[] retArray = new LocalTime[riders.size()];
+			return rankedAdjustedElapsedTimesInStage.toArray(retArray);
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public int[] getRidersPointsInStage(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		// awards points according to fig 1:
+		StageType type;
+		int[] pointDistribution;
+		LocalTime[] ridersAdjustedElapsedTime;
+		int[] ridersPointsInStage = new int[riders.size()];
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				if (!(stages.get(i)).getRiderResults().isEmpty()) {
+					type = (stages.get(i)).getStageType();
+					if (type == StageType.FLAT) {
+						pointDistribution = new int[]{50,30,20,18,16,14,12,10,8,7,6,5,4,3,2};
+					}
+					else if (type == StageType.MEDIUM_MOUNTAIN) {
+						pointDistribution = new int[]{30,25,22,19,17,15,13,11,9,7,6,5,4,3,2};
+					}
+					else {
+						pointDistribution = new int[]{20,17,15,13,11,10,9,8,7,6,5,4,3,2,1};
+					}
+					ridersAdjustedElapsedTime = getRankedAdjustedElapsedTimesInStage(stageId);
+					for (int j = 0; j < ridersAdjustedElapsedTime.length; j++) {
+						if (ridersAdjustedElapsedTime[j] == null || j > pointDistribution.length) {
+							ridersPointsInStage[j] = 0;
+						} else {
+							// need to account for riders with equal times
+							if (j > 0 && ridersAdjustedElapsedTime[j] == ridersAdjustedElapsedTime[j - 1])
+								ridersPointsInStage[j] = ridersPointsInStage[j - 1];
+							else
+								ridersPointsInStage[j] = pointDistribution[j];
+						}
+					}
+				}
+				return (ridersPointsInStage);
+			}
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
+	}
+
+	private SegmentType[] extractSegmentTypeArray(int[] segmentIds) throws IDNotRecognisedException {
+		SegmentType[] retArray = new SegmentType[segmentIds.length];
+		for (int id : segmentIds) {
+			for (int i = 0; i < segments.size(); i++) {
+				if (segments.get(i).getId() == id) {
+					retArray[i] = segments.get(i).getSegmentType();
+				}
+			}
+		}
+		return retArray;
+	}
+
+	private int[] getPointDistributionForSegment(SegmentType type) {
+		switch (type) {
+			case C4:
+				return new int[]{1};
+			case C3:
+				return new int[]{2,1};
+			case C2:
+				return new int[]{5,3,2,1};
+			case C1:
+				return new int[]{10,8,6,4,2,1};
+			case HC:
+				return new int[]{20,15,12,10,8,6,4,2,1};
+			default:
+				return new int[]{};
+		}
 	}
 
 	@Override
 	public int[] getRidersMountainPointsInStage(int stageId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		// Id check stage*, check climbtype?, award points according to fig 2:
+		int[] ridersMountainPointsInStage = new int[riders.size()];
+		int[] pointDistribution = new int[]{0,0,0,0,0,0,0,0,0};
+		for (int i = 0; i < stages.size(); i++) {
+			if ((stages.get(i)).getId() == stageId) {
+				int[] stageSegmentIds = getStageSegments(stageId);
+				SegmentType[] stageSegmentTypes = extractSegmentTypeArray(stageSegmentIds);
+				// need to get total point distribution (sum of distribution for each segment)
+				for (int j = 0; j < stageSegmentTypes.length; j++) {
+					int[] tempPointDistribution = getPointDistributionForSegment(stageSegmentTypes[j]);
+					for (int k = 0; k < tempPointDistribution.length; k++) {
+						pointDistribution[k] += tempPointDistribution[k];
+					}
+				}
+				// now we can calculate points per rider
+				LocalTime[] ridersAdjustedElapsedTime = getRankedAdjustedElapsedTimesInStage(stageId);
+				for (int j = 0; j < ridersAdjustedElapsedTime.length; j++) {
+					if (ridersAdjustedElapsedTime[j] == null || j > pointDistribution.length) {
+						ridersMountainPointsInStage[j] = 0;
+					} else {
+						// need to account for riders with equal times
+						if (j > 0 && ridersAdjustedElapsedTime[j] == ridersAdjustedElapsedTime[j - 1])
+							ridersMountainPointsInStage[j] = ridersMountainPointsInStage[j - 1];
+						else
+							ridersMountainPointsInStage[j] = pointDistribution[j];
+					}
+				}
+			}
+			return ridersMountainPointsInStage;
+		}
+		throw new IDNotRecognisedException("Stage ID of "+stageId+" not found");
 	}
 
 	@Override
 	public void eraseCyclingPortal() {
-		// TODO Auto-generated method stub
-
+		races.clear();
+		stages.clear();
+		segments.clear();
+		teams.clear();
+		riders.clear();
 	}
 
 	@Override
 	public void saveCyclingPortal(String filename) throws IOException {
-		// TODO Auto-generated method stub
-
+		try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(filename))) {
+			stream.writeObject(races);
+			stream.writeObject(stages);
+			stream.writeObject(segments);
+			stream.writeObject(teams);
+			stream.writeObject(riders);
+		}
 	}
 
 	@Override
 	public void loadCyclingPortal(String filename) throws IOException, ClassNotFoundException {
-		// TODO Auto-generated method stub
-
+		try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(filename))) {
+			for (int i = 0; i < 5; i++) {
+				Object obj = stream.readObject();
+				if (obj instanceof ArrayList)
+					switch(i)
+					{
+					case 0:
+						races = (ArrayList<Race>) obj;
+					case 1:
+						stages = (ArrayList<Stage>) obj;
+					case 2:
+						segments = (ArrayList<Segment>) obj;
+					case 3:
+						teams = (ArrayList<Team>) obj;
+					case 4:
+						riders = (ArrayList<Rider>) obj;
+					}
+			}
+		}
 	}
 
 	@Override
 	public void removeRaceByName(String name) throws NameNotRecognisedException {
-		// TODO Auto-generated method stub
-
+		for (int i = 0; i < races.size(); i++) {
+			if ((races.get(i)).getName() == name) {
+				races.remove(i);
+				return;
+			}
+		}
+		throw new NameNotRecognisedException("Race named "+name+" not found");
 	}
 
 	@Override
 	public LocalTime[] getGeneralClassificationTimesInRace(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		Map<Integer, Long> riderTimes = new HashMap<Integer, Long>();
+		LocalTime[] generalClassificationTimes = new LocalTime[riders.size()];
+		long tempNanos;
+		LocalTime tempLocalTime;
+		for (int i = 0; i < races.size(); i++) {
+			if (races.get(i).getId() == raceId) {
+				int[] stageIds = races.get(i).getStageIdsIntArray();
+				int[] riderIds = getRiderIds();
+				for (int j : stageIds) {
+					if (!stages.get(j).getRiderResults().isEmpty()) {
+						for (int k : riderIds) {
+							tempNanos = riderTimes.get(k);
+							tempLocalTime = getRiderAdjustedElapsedTimeInStage(j, k);
+							if (tempLocalTime == null)
+								tempNanos = 0;
+							else
+								tempNanos += getRiderAdjustedElapsedTimeInStage(j, k).toNanoOfDay();
+							riderTimes.put(k, tempNanos);
+						}
+					}
+				}
+				// sort it
+				List<Map.Entry<Integer, Long>> list = new ArrayList<>(riderTimes.entrySet());
+				list.sort(Map.Entry.comparingByValue());
+				// from long to LocalTime
+				for (int k = 0; k < list.size(); k++) {
+					generalClassificationTimes[k] = LocalTime.ofNanoOfDay(list.get(k).getValue());
+				}
+				return generalClassificationTimes;
+			}
+		}
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
 	public int[] getRidersPointsInRace(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		int[] ridersPointsInRace = new int[riders.size()];
+		int[] tempPoints;
+		for (int i = 0; i < races.size(); i++) {
+			if (races.get(i).getId() == raceId) {
+				int[] stageIds = getRaceStages(raceId);
+				for (int j : stageIds) {
+					tempPoints = getRidersPointsInStage(j);
+					if (tempPoints.length == 0)
+						return new int[riders.size()];
+					for (int k = 0; k < ridersPointsInRace.length; k++) {
+						ridersPointsInRace[k] += tempPoints[k];
+					}
+				}
+				return ridersPointsInRace;
+			}
+		}
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
 	public int[] getRidersMountainPointsInRace(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		int[] ridersMountainPointsInRace = new int[riders.size()];
+		int[] tempMountainPoints;
+		for (int i = 0; i < races.size(); i++) {
+			if (races.get(i).getId() == raceId) {
+				int[] stageIds = getRaceStages(raceId);
+				for (int j : stageIds) {
+					tempMountainPoints = getRidersMountainPointsInStage(j);
+					if (tempMountainPoints.length == 0)
+						return new int[riders.size()];
+					for (int k = 0; k < ridersMountainPointsInRace.length; k++) {
+						ridersMountainPointsInRace[k] += tempMountainPoints[k];
+					}
+				}
+				return ridersMountainPointsInRace;
+			}
+		}
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
 	public int[] getRidersGeneralClassificationRank(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		Map<Integer, Long> riderTimes = new HashMap<Integer, Long>();
+		int[] generalClassificationRanks = new int[riders.size()];
+		long tempNanos;
+		LocalTime tempLocalTime;
+		for (int i = 0; i < races.size(); i++) {
+			if (races.get(i).getId() == raceId) {
+				int[] stageIds = races.get(i).getStageIdsIntArray();
+				int[] riderIds = getRiderIds();
+				for (int j : stageIds) {
+					if (!stages.get(j).getRiderResults().isEmpty()) {
+						for (int k : riderIds) {
+							tempNanos = riderTimes.get(k);
+							tempLocalTime = getRiderAdjustedElapsedTimeInStage(j, k);
+							if (tempLocalTime == null)
+								tempNanos = 0;
+							else
+								tempNanos += getRiderAdjustedElapsedTimeInStage(j, k).toNanoOfDay();
+							riderTimes.put(k, tempNanos);
+						}
+					}
+				}
+				// sort it
+				List<Map.Entry<Integer, Long>> list = new ArrayList<>(riderTimes.entrySet());
+				list.sort(Map.Entry.comparingByValue());
+				// get the key (id)
+				for (int k = 0; k < list.size(); k++) {
+					generalClassificationRanks[k] = list.get(k).getKey();
+				}
+				return generalClassificationRanks;
+			}
+		}
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
+	}
+	/**
+	 * Get the ranked list of riders based on the points classification in a race.
+	 * <p>
+	 * The state of this MiniCyclingPortalInterface must be unchanged if any
+	 * exceptions are thrown.
+	 *
+	 * @param raceId The ID of the race being queried.
+	 * @param mode Rank based on points (0) or mountain points (1)
+	 * @return A ranked list of riders' IDs sorted descending by the sum of their
+	 *         points/mountain points in all stages of the race. That is, the first in
+	 *         this list is the winner (more points). An empty list if there is no result
+	 *          for any stage in the race.
+	 * @throws IDNotRecognisedException If the ID does not match any race in the
+	 *                                  system.
+	 */
+	private int[] getRidersPointClassificationRankGeneric(int raceId, int mode) throws IDNotRecognisedException {
+		HashMap<Integer, Integer> riderPointMapping = new HashMap<Integer, Integer>();
+		int[] curPoints, curRank;
+		int[] ridersClassificationRank = new int[riders.size()];
+		for (int i = 0; i < races.size(); i++) {
+			if (races.get(i).getId() == raceId) {
+				// horribly inefficient but deadline approaching
+				int[] stageIds = races.get(i).getStageIdsIntArray();
+				for (int j : stageIds) {
+					if (mode == 0)
+						curPoints = getRidersPointsInStage(j);
+					else
+						curPoints = getRidersMountainPointsInStage(j);
+					curRank = getRidersRankInStage(j);
+					if (j == stageIds[0]) {
+						// set up the mapping
+						for (int k = 0; k < curRank.length; k++) {
+							riderPointMapping.put(curRank[k], curPoints[k]);
+						}
+					} else {
+						for (int k = 0; k < curRank.length; k++) {
+							riderPointMapping.put(curRank[k], riderPointMapping.get(curRank[k]) + curPoints[k]);
+						}
+					}
+				}
+				List<Map.Entry<Integer, Integer>> list = new ArrayList<>(riderPointMapping.entrySet());
+				list.sort(Map.Entry.comparingByValue());
+				for (int j = 0; j < list.size(); j++) {
+					ridersClassificationRank[j] = list.get(j).getKey();
+				}
+				return ridersClassificationRank;
+			}
+		}
+		throw new IDNotRecognisedException("Race ID of "+raceId+" not found");
 	}
 
 	@Override
 	public int[] getRidersPointClassificationRank(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		return getRidersPointClassificationRankGeneric(raceId, 0);
 	}
 
 	@Override
 	public int[] getRidersMountainPointClassificationRank(int raceId) throws IDNotRecognisedException {
-		// TODO Auto-generated method stub
-		return null;
+		return getRidersPointClassificationRankGeneric(raceId, 1);
 	}
-
 }

@@ -1,8 +1,9 @@
 package cycling;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Race {
+public class Race implements Serializable {
 	private String name;
 	private String description;
 	private int id;
